@@ -1,4 +1,4 @@
-package com.crimsonwarpedcraft.exampleplugin;
+package ca.jessewhite.imaginationplugin;
 
 import org.junit.jupiter.api.Test;
 
