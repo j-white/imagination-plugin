@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Copyright (c) Levi Muniz. All Rights Reserved.
  */
-public class ExamplePluginTest {
+public class ImaginationPluginTest {
 
   @Test
   public void onEnable() {
