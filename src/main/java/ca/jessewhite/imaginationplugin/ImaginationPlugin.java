@@ -49,13 +49,13 @@ public class ImaginationPlugin extends JavaPlugin implements Listener, CommandEx
           LOG.warn("Failed to imagine", throwable);
           return;
         }
-        if (blocks == null || blocks.blocks() == null || blocks.blocks().isEmpty()) {
+        if (blocks == null || blocks.elements() == null || blocks.elements().isEmpty()) {
           getServer().getScheduler().runTask(this, () ->
                   sender.sendMessage("Sorry, I couldn't generate any blocks from your imagination."));
           return;
         }
 
-        int blockCount = blocks.blocks().size();
+        int blockCount = blocks.elements().size();
         getServer().getScheduler().runTask(this, () ->
                 sender.sendMessage("Your imagination generated " + blockCount + " blocks!"));
         blockBuilder.build(blocks);

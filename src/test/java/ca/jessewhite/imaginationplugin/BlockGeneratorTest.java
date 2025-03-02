@@ -13,6 +13,9 @@ public class BlockGeneratorTest {
         aiService.init();
         var future = aiService.imagine("a house");
         var blocks = future.toCompletableFuture().join();
-        System.out.println(blocks);
+        System.out.println("Elements that generate blocks:");
+        for (var block : blocks.elements()) {
+            System.out.println(block);
+        }
     }
 }

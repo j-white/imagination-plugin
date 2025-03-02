@@ -2,6 +2,10 @@ package ca.jessewhite.imaginationplugin;
 
 import ca.jessewhite.imaginationplugin.ai.Block;
 import ca.jessewhite.imaginationplugin.ai.Blocks;
+import ca.jessewhite.imaginationplugin.ai.MinecraftBlocks;
+import ca.jessewhite.imaginationplugin.ai.MinecraftElement;
+import ca.jessewhite.imaginationplugin.ai.Position;
+import ca.jessewhite.imaginationplugin.ai.Range;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -26,6 +30,87 @@ public class BlockBuilder {
 
     public BlockBuilder(JavaPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    public void build(MinecraftBlocks blocks) {
+        // Schedule the building task to run on the main server thread
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (blocks == null || blocks.elements() == null || blocks.elements().isEmpty()) {
+                LOG.warn("No elements to build");
+                return;
+            }
+
+            // Get the player who initiated the command
+            Player player = Bukkit.getOnlinePlayers().stream().findFirst().orElse(null);
+            if (player == null) {
+                LOG.warn("No player found to build near");
+                return;
+            }
+
+            // Calculate a position in front of the player based on where they're looking
+            Location playerLoc = player.getLocation();
+            World world = playerLoc.getWorld();
+            Vector direction = playerLoc.getDirection().normalize();
+            
+            // Get a position a few blocks in front of the player
+            Location buildStartLoc = playerLoc.clone().add(direction.clone().multiply(BUILD_DISTANCE));
+            
+            // Round to block coordinates (integers)
+            buildStartLoc.setX(Math.floor(buildStartLoc.getX()));
+            buildStartLoc.setY(Math.floor(buildStartLoc.getY()));
+            buildStartLoc.setZ(Math.floor(buildStartLoc.getZ()));
+            
+            // Find the highest block at this location to build on top of it
+            int groundY = world.getHighestBlockYAt(buildStartLoc.getBlockX(), buildStartLoc.getBlockZ());
+            buildStartLoc.setY(groundY + Y_OFFSET);
+
+            LOG.info("Building structure with " + blocks.elements().size() + " elements in front of player at " +
+                    buildStartLoc.getBlockX() + ", " + buildStartLoc.getBlockY() + ", " + buildStartLoc.getBlockZ() +
+                    " (ground level: " + groundY + ")");
+
+            // Process each element in the structure
+            for (MinecraftElement element : blocks.elements()) {
+                try {
+                    if ("block".equalsIgnoreCase(element.elementType())) {
+                        // Single block placement
+                        Position pos = element.position();
+                        if (pos != null) {
+                            placeBlock(
+                                world,
+                                buildStartLoc.getBlockX() + (int)Math.round(pos.x()),
+                                buildStartLoc.getBlockY() + (int)Math.round(pos.y()),
+                                buildStartLoc.getBlockZ() + (int)Math.round(pos.z()),
+                                element.material()
+                            );
+                        } else {
+                            LOG.warn("Block element missing position");
+                        }
+                    } else if ("area".equalsIgnoreCase(element.elementType())) {
+                        // Area fill
+                        Range range = element.range();
+                        if (range != null) {
+                            fillArea(
+                                world,
+                                buildStartLoc.getBlockX() + (int)Math.round(range.x().min()),
+                                buildStartLoc.getBlockY() + (int)Math.round(range.y().min()),
+                                buildStartLoc.getBlockZ() + (int)Math.round(range.z().min()),
+                                buildStartLoc.getBlockX() + (int)Math.round(range.x().max()),
+                                buildStartLoc.getBlockY() + (int)Math.round(range.y().max()),
+                                buildStartLoc.getBlockZ() + (int)Math.round(range.z().max()),
+                                element.material()
+                            );
+                        } else {
+                            LOG.warn("Area element missing range");
+                        }
+                    } else {
+                        LOG.warn("Unknown element type: " + element.elementType());
+                    }
+                } catch (Exception e) {
+                    LOG.warn("Error placing element: " + e.getMessage(), e);
+                }
+            }
+            LOG.info("Structure building complete");
+        });
     }
 
     public void build(Blocks blocks) {
@@ -73,12 +158,12 @@ public class BlockBuilder {
                             // Create a fill block and process it
                             fillArea(
                                     world,
-                                    buildStartLoc.getBlockX() + block.x(),
-                                    buildStartLoc.getBlockY() + block.y(),
-                                    buildStartLoc.getBlockZ() + block.z(),
-                                    buildStartLoc.getBlockX() + block.endX(),
-                                    buildStartLoc.getBlockY() + block.endY(),
-                                    buildStartLoc.getBlockZ() + block.endZ(),
+                                    buildStartLoc.getBlockX() + (int)Math.round(block.x()),
+                                    buildStartLoc.getBlockY() + (int)Math.round(block.y()),
+                                    buildStartLoc.getBlockZ() + (int)Math.round(block.z()),
+                                    buildStartLoc.getBlockX() + (int)Math.round(block.endX()),
+                                    buildStartLoc.getBlockY() + (int)Math.round(block.endY()),
+                                    buildStartLoc.getBlockZ() + (int)Math.round(block.endZ()),
                                     block.type()
                             );
                         } else {
@@ -86,9 +171,9 @@ public class BlockBuilder {
                             // Still place a single block
                             placeBlock(
                                     world,
-                                    buildStartLoc.getBlockX() + block.x(),
-                                    buildStartLoc.getBlockY() + block.y(),
-                                    buildStartLoc.getBlockZ() + block.z(),
+                                    buildStartLoc.getBlockX() + (int)Math.round(block.x()),
+                                    buildStartLoc.getBlockY() + (int)Math.round(block.y()),
+                                    buildStartLoc.getBlockZ() + (int)Math.round(block.z()),
                                     block.type()
                             );
                         }
@@ -96,9 +181,9 @@ public class BlockBuilder {
                         // Regular block placement
                         placeBlock(
                                 world,
-                                buildStartLoc.getBlockX() + block.x(),
-                                buildStartLoc.getBlockY() + block.y(),
-                                buildStartLoc.getBlockZ() + block.z(),
+                                buildStartLoc.getBlockX() + (int)Math.round(block.x()),
+                                buildStartLoc.getBlockY() + (int)Math.round(block.y()),
+                                buildStartLoc.getBlockZ() + (int)Math.round(block.z()),
                                 block.type()
                         );
                     }
