@@ -5,16 +5,11 @@ api-version: "1.21.1"
 author: AUTHOR
 description: DESCRIPTION
 commands:
-  ex:
-    description: Base command for EXAMPLE
-    usage: "For a list of commands, type /ex help"
-    aliases: example
+  imagine:
+    description: Records what a player imagines in the server logs
+    usage: "/imagine <text> - Log your imagination to the server"
+    permission: imagination.use
 permissions:
-  example.test:
-    description: DESCRIPTION
+  imagination.use:
+    description: Allows players to use the imagine command
     default: true
-  example.*:
-    description: Grants all other permissions
-    default: false
-    children:
-      example.test: true

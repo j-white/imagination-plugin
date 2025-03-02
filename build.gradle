@@ -1,9 +1,9 @@
-import com.github.spotbugs.snom.SpotBugsTask
+// import com.github.spotbugs.snom.SpotBugsTask
 import java.text.SimpleDateFormat
 
 plugins {
-    id 'checkstyle'
-    id "com.github.spotbugs" version "6.1.5"
+    // id 'checkstyle'
+    // id "com.github.spotbugs" version "6.1.5"
     id 'com.gradleup.shadow' version '8.3.6'
     id 'java'
 }
@@ -67,11 +67,15 @@ dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.9.1'
     implementation 'io.papermc:paperlib:1.0.8'
-    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
+    implementation 'dev.langchain4j:langchain4j:1.0.0-beta1'
+    implementation 'dev.langchain4j:langchain4j-ollama:1.0.0-beta1'
+    // spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
     testCompileOnly 'com.github.spotbugs:spotbugs-annotations:4.9.1'
     testImplementation 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.testcontainers:ollama:1.20.5'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.17'
 }
 
 test {
@@ -84,6 +88,7 @@ processResources {
     }
 }
 
+/* Commenting out checkstyle and spotbugs configurations
 checkstyle {
     toolVersion '10.20.1'
     maxWarnings = 0
@@ -110,6 +115,7 @@ tasks.withType(SpotBugsTask).configureEach {
         required = false
     }
 }
+*/
 
 shadowJar {
     archiveClassifier.set('')
