@@ -23,10 +23,12 @@ public class BlockBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(BlockBuilder.class);
     private final JavaPlugin plugin;
     private static final Map<String, Material> materialCache = new HashMap<>();
-    // Distance in front of player to start building
-    private static final int BUILD_DISTANCE = 3;
+    // Distance in front of player to start building - increased to prevent player from being in structure
+    private static final int BUILD_DISTANCE = 5;
     // Height offset to ensure building above ground
     private static final int Y_OFFSET = 1;
+    // Safety distance to ensure player is not inside the structure
+    private static final int SAFETY_DISTANCE = 2;
 
     public BlockBuilder(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -52,7 +54,7 @@ public class BlockBuilder {
             World world = playerLoc.getWorld();
             Vector direction = playerLoc.getDirection().normalize();
             
-            // Get a position a few blocks in front of the player
+            // Get a position several blocks in front of the player to ensure safety
             Location buildStartLoc = playerLoc.clone().add(direction.clone().multiply(BUILD_DISTANCE));
             
             // Round to block coordinates (integers)
@@ -63,6 +65,17 @@ public class BlockBuilder {
             // Find the highest block at this location to build on top of it
             int groundY = world.getHighestBlockYAt(buildStartLoc.getBlockX(), buildStartLoc.getBlockZ());
             buildStartLoc.setY(groundY + Y_OFFSET);
+
+            // Get bounds of the structure to ensure player safety
+            BoundingBox structureBounds = calculateStructureBounds(blocks, buildStartLoc);
+            
+            // Check if player is too close to the building area
+            if (isPlayerTooClose(playerLoc, structureBounds)) {
+                // Adjust the building location to ensure player safety
+                Vector safetyOffset = direction.clone().multiply(SAFETY_DISTANCE);
+                buildStartLoc.add(safetyOffset);
+                LOG.info("Adjusted building position to ensure player safety");
+            }
 
             LOG.info("Building structure with " + blocks.elements().size() + " elements in front of player at " +
                     buildStartLoc.getBlockX() + ", " + buildStartLoc.getBlockY() + ", " + buildStartLoc.getBlockZ() +
@@ -133,7 +146,7 @@ public class BlockBuilder {
             World world = playerLoc.getWorld();
             Vector direction = playerLoc.getDirection().normalize();
             
-            // Get a position a few blocks in front of the player
+            // Get a position several blocks in front of the player to ensure safety
             Location buildStartLoc = playerLoc.clone().add(direction.clone().multiply(BUILD_DISTANCE));
             
             // Round to block coordinates (integers)
@@ -144,6 +157,17 @@ public class BlockBuilder {
             // Find the highest block at this location to build on top of it
             int groundY = world.getHighestBlockYAt(buildStartLoc.getBlockX(), buildStartLoc.getBlockZ());
             buildStartLoc.setY(groundY + Y_OFFSET);
+
+            // Get bounds of the structure to ensure player safety
+            BoundingBox structureBounds = calculateStructureBounds(blocks, buildStartLoc);
+            
+            // Check if player is too close to the building area
+            if (isPlayerTooClose(playerLoc, structureBounds)) {
+                // Adjust the building location to ensure player safety
+                Vector safetyOffset = direction.clone().multiply(SAFETY_DISTANCE);
+                buildStartLoc.add(safetyOffset);
+                LOG.info("Adjusted building position to ensure player safety");
+            }
 
             LOG.info("Building structure with " + blocks.blocks().size() + " blocks in front of player at " +
                     buildStartLoc.getBlockX() + ", " + buildStartLoc.getBlockY() + ", " + buildStartLoc.getBlockZ() +
@@ -193,6 +217,135 @@ public class BlockBuilder {
             }
             LOG.info("Structure building complete");
         });
+    }
+
+    // Added helper class to represent a bounding box for the structure
+    private static class BoundingBox {
+        int minX, minY, minZ;
+        int maxX, maxY, maxZ;
+
+        BoundingBox(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+        }
+
+        boolean contains(int x, int y, int z) {
+            return x >= minX && x <= maxX &&
+                   y >= minY && y <= maxY &&
+                   z >= minZ && z <= maxZ;
+        }
+    }
+
+    // Calculate the bounding box of the structure
+    private BoundingBox calculateStructureBounds(MinecraftBlocks blocks, Location buildStartLoc) {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+
+        for (MinecraftElement element : blocks.elements()) {
+            if ("block".equalsIgnoreCase(element.elementType())) {
+                Position pos = element.position();
+                if (pos != null) {
+                    int x = buildStartLoc.getBlockX() + (int)Math.round(pos.x());
+                    int y = buildStartLoc.getBlockY() + (int)Math.round(pos.y());
+                    int z = buildStartLoc.getBlockZ() + (int)Math.round(pos.z());
+                    
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    minZ = Math.min(minZ, z);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                    maxZ = Math.max(maxZ, z);
+                }
+            } else if ("area".equalsIgnoreCase(element.elementType())) {
+                Range range = element.range();
+                if (range != null) {
+                    int startX = buildStartLoc.getBlockX() + (int)Math.round(range.x().min());
+                    int startY = buildStartLoc.getBlockY() + (int)Math.round(range.y().min());
+                    int startZ = buildStartLoc.getBlockZ() + (int)Math.round(range.z().min());
+                    int endX = buildStartLoc.getBlockX() + (int)Math.round(range.x().max());
+                    int endY = buildStartLoc.getBlockY() + (int)Math.round(range.y().max());
+                    int endZ = buildStartLoc.getBlockZ() + (int)Math.round(range.z().max());
+                    
+                    minX = Math.min(minX, Math.min(startX, endX));
+                    minY = Math.min(minY, Math.min(startY, endY));
+                    minZ = Math.min(minZ, Math.min(startZ, endZ));
+                    maxX = Math.max(maxX, Math.max(startX, endX));
+                    maxY = Math.max(maxY, Math.max(startY, endY));
+                    maxZ = Math.max(maxZ, Math.max(startZ, endZ));
+                }
+            }
+        }
+        
+        // If no elements were processed, provide a default small bounding box
+        if (minX == Integer.MAX_VALUE) {
+            return new BoundingBox(
+                buildStartLoc.getBlockX(), buildStartLoc.getBlockY(), buildStartLoc.getBlockZ(),
+                buildStartLoc.getBlockX(), buildStartLoc.getBlockY(), buildStartLoc.getBlockZ()
+            );
+        }
+        
+        return new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    // Calculate the bounding box of the structure for Blocks
+    private BoundingBox calculateStructureBounds(Blocks blocks, Location buildStartLoc) {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+
+        for (Block block : blocks.blocks()) {
+            int x = buildStartLoc.getBlockX() + (int)Math.round(block.x());
+            int y = buildStartLoc.getBlockY() + (int)Math.round(block.y());
+            int z = buildStartLoc.getBlockZ() + (int)Math.round(block.z());
+            
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            minZ = Math.min(minZ, z);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+            maxZ = Math.max(maxZ, z);
+            
+            if (block.fill() && block.endX() != null && block.endY() != null && block.endZ() != null) {
+                int endX = buildStartLoc.getBlockX() + (int)Math.round(block.endX());
+                int endY = buildStartLoc.getBlockY() + (int)Math.round(block.endY());
+                int endZ = buildStartLoc.getBlockZ() + (int)Math.round(block.endZ());
+                
+                minX = Math.min(minX, endX);
+                minY = Math.min(minY, endY);
+                minZ = Math.min(minZ, endZ);
+                maxX = Math.max(maxX, endX);
+                maxY = Math.max(maxY, endY);
+                maxZ = Math.max(maxZ, endZ);
+            }
+        }
+        
+        // If no blocks were processed, provide a default small bounding box
+        if (minX == Integer.MAX_VALUE) {
+            return new BoundingBox(
+                buildStartLoc.getBlockX(), buildStartLoc.getBlockY(), buildStartLoc.getBlockZ(),
+                buildStartLoc.getBlockX(), buildStartLoc.getBlockY(), buildStartLoc.getBlockZ()
+            );
+        }
+        
+        return new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    // Check if player is too close to the building area
+    private boolean isPlayerTooClose(Location playerLoc, BoundingBox bounds) {
+        // Expand the bounds slightly to provide a safety buffer
+        BoundingBox expandedBounds = new BoundingBox(
+            bounds.minX - SAFETY_DISTANCE,
+            bounds.minY - SAFETY_DISTANCE,
+            bounds.minZ - SAFETY_DISTANCE,
+            bounds.maxX + SAFETY_DISTANCE,
+            bounds.maxY + SAFETY_DISTANCE,
+            bounds.maxZ + SAFETY_DISTANCE
+        );
+        
+        return expandedBounds.contains(playerLoc.getBlockX(), playerLoc.getBlockY(), playerLoc.getBlockZ());
     }
 
     private void fillArea(World world, int startX, int startY, int startZ, int endX, int endY, int endZ, String blockType) {
