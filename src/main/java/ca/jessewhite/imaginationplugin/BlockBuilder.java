@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,8 @@ public class BlockBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(BlockBuilder.class);
     private final JavaPlugin plugin;
     private static final Map<String, Material> materialCache = new HashMap<>();
+    // Distance in front of player to start building
+    private static final int BUILD_DISTANCE = 3;
 
     public BlockBuilder(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -38,12 +41,22 @@ public class BlockBuilder {
                 return;
             }
 
-            // Use the player's location as the starting point
-            Location startLoc = player.getLocation();
-            World world = startLoc.getWorld();
+            // Calculate a position in front of the player based on where they're looking
+            Location playerLoc = player.getLocation();
+            Vector direction = playerLoc.getDirection().normalize();
+            
+            // Get a position a few blocks in front of the player
+            Location buildStartLoc = playerLoc.clone().add(direction.clone().multiply(BUILD_DISTANCE));
+            
+            // Round to block coordinates (integers)
+            buildStartLoc.setX(Math.floor(buildStartLoc.getX()));
+            buildStartLoc.setY(Math.floor(buildStartLoc.getY()));
+            buildStartLoc.setZ(Math.floor(buildStartLoc.getZ()));
+            
+            World world = playerLoc.getWorld();
 
-            LOG.info("Building structure with " + blocks.blocks().size() + " blocks near " +
-                    startLoc.getBlockX() + ", " + startLoc.getBlockY() + ", " + startLoc.getBlockZ());
+            LOG.info("Building structure with " + blocks.blocks().size() + " blocks in front of player at " +
+                    buildStartLoc.getBlockX() + ", " + buildStartLoc.getBlockY() + ", " + buildStartLoc.getBlockZ());
 
             // Process each block in the structure
             for (Block block : blocks.blocks()) {
@@ -54,12 +67,12 @@ public class BlockBuilder {
                             // Create a fill block and process it
                             fillArea(
                                     world,
-                                    startLoc.getBlockX() + block.x(),
-                                    startLoc.getBlockY() + block.y(),
-                                    startLoc.getBlockZ() + block.z(),
-                                    startLoc.getBlockX() + block.endX(),
-                                    startLoc.getBlockY() + block.endY(),
-                                    startLoc.getBlockZ() + block.endZ(),
+                                    buildStartLoc.getBlockX() + block.x(),
+                                    buildStartLoc.getBlockY() + block.y(),
+                                    buildStartLoc.getBlockZ() + block.z(),
+                                    buildStartLoc.getBlockX() + block.endX(),
+                                    buildStartLoc.getBlockY() + block.endY(),
+                                    buildStartLoc.getBlockZ() + block.endZ(),
                                     block.type()
                             );
                         } else {
@@ -67,9 +80,9 @@ public class BlockBuilder {
                             // Still place a single block
                             placeBlock(
                                     world,
-                                    startLoc.getBlockX() + block.x(),
-                                    startLoc.getBlockY() + block.y(),
-                                    startLoc.getBlockZ() + block.z(),
+                                    buildStartLoc.getBlockX() + block.x(),
+                                    buildStartLoc.getBlockY() + block.y(),
+                                    buildStartLoc.getBlockZ() + block.z(),
                                     block.type()
                             );
                         }
@@ -77,9 +90,9 @@ public class BlockBuilder {
                         // Regular block placement
                         placeBlock(
                                 world,
-                                startLoc.getBlockX() + block.x(),
-                                startLoc.getBlockY() + block.y(),
-                                startLoc.getBlockZ() + block.z(),
+                                buildStartLoc.getBlockX() + block.x(),
+                                buildStartLoc.getBlockY() + block.y(),
+                                buildStartLoc.getBlockZ() + block.z(),
                                 block.type()
                         );
                     }
