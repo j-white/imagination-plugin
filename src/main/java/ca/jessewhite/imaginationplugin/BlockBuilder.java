@@ -21,6 +21,8 @@ public class BlockBuilder {
     private static final Map<String, Material> materialCache = new HashMap<>();
     // Distance in front of player to start building
     private static final int BUILD_DISTANCE = 3;
+    // Height offset to ensure building above ground
+    private static final int Y_OFFSET = 1;
 
     public BlockBuilder(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -43,6 +45,7 @@ public class BlockBuilder {
 
             // Calculate a position in front of the player based on where they're looking
             Location playerLoc = player.getLocation();
+            World world = playerLoc.getWorld();
             Vector direction = playerLoc.getDirection().normalize();
             
             // Get a position a few blocks in front of the player
@@ -53,10 +56,13 @@ public class BlockBuilder {
             buildStartLoc.setY(Math.floor(buildStartLoc.getY()));
             buildStartLoc.setZ(Math.floor(buildStartLoc.getZ()));
             
-            World world = playerLoc.getWorld();
+            // Find the highest block at this location to build on top of it
+            int groundY = world.getHighestBlockYAt(buildStartLoc.getBlockX(), buildStartLoc.getBlockZ());
+            buildStartLoc.setY(groundY + Y_OFFSET);
 
             LOG.info("Building structure with " + blocks.blocks().size() + " blocks in front of player at " +
-                    buildStartLoc.getBlockX() + ", " + buildStartLoc.getBlockY() + ", " + buildStartLoc.getBlockZ());
+                    buildStartLoc.getBlockX() + ", " + buildStartLoc.getBlockY() + ", " + buildStartLoc.getBlockZ() +
+                    " (ground level: " + groundY + ")");
 
             // Process each block in the structure
             for (Block block : blocks.blocks()) {
