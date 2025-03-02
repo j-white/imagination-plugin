@@ -168,7 +168,7 @@ public class BlockBuilder {
             return material;
         } catch (IllegalArgumentException e) {
             // Log the error and try alternative approaches
-            LOG.warn("Could not find material for: " + blockType);
+            LOG.warn("Could not find material for: " + cleanType);
 
             // For unknown blocks, default to a visible placeholder (can be customized)
             materialCache.put(cleanType, Material.STONE);

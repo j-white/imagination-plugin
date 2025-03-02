@@ -10,7 +10,7 @@ public interface BlockGenerator {
             + "for each block in the build. Make the corner of the build at 0,0,0 "
             + "and build it in the positive quadrant. "
             + "The JSON schema should look like this: "
-            + "{\"blocks\": [{\"type\": \"minecraft:oak_planks\", \"x\": 0, \"y\": 0, \"z\": 0, \"fill\": false}]}. "
+            + "{\"blocks\": [{\"type\": \"BIRCH_PLANKS\", \"x\": 0, \"y\": 0, \"z\": 0, \"fill\": false}]}. "
             + "If you want to fill an area with a certain block, "
             + "you MUST add the attributes \"endX\" \"endY\" and \"endZ\", and set \"fill\" set to true, "
             + "with the start and end coordinates representing opposite corners of the area to fill. "
