@@ -11,7 +11,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,39 +49,17 @@ public class BlockBuilder {
             for (Block block : blocks.blocks()) {
                 try {
                     if (block.fill()) {
-                        // Try to extract endX, endY, endZ using reflection
-                        Integer endX = null, endY = null, endZ = null;
-
-                        try {
-                            // Get the class of the block object
-                            Class<?> blockClass = block.getClass();
-
-                            // Try to access endX, endY, endZ fields
-                            Field endXField = blockClass.getDeclaredField("endX");
-                            Field endYField = blockClass.getDeclaredField("endY");
-                            Field endZField = blockClass.getDeclaredField("endZ");
-
-                            endXField.setAccessible(true);
-                            endYField.setAccessible(true);
-                            endZField.setAccessible(true);
-
-                            endX = (Integer) endXField.get(block);
-                            endY = (Integer) endYField.get(block);
-                            endZ = (Integer) endZField.get(block);
-                        } catch (Exception e) {
-                            LOG.warn("Failed to extract end coordinates from fill block: " + e.getMessage());
-                        }
-
-                        if (endX != null && endY != null && endZ != null) {
+                        // Check if the end coordinates are available
+                        if (block.endX() != null && block.endY() != null && block.endZ() != null) {
                             // Create a fill block and process it
                             fillArea(
                                     world,
                                     startLoc.getBlockX() + block.x(),
                                     startLoc.getBlockY() + block.y(),
                                     startLoc.getBlockZ() + block.z(),
-                                    startLoc.getBlockX() + endX,
-                                    startLoc.getBlockY() + endY,
-                                    startLoc.getBlockZ() + endZ,
+                                    startLoc.getBlockX() + block.endX(),
+                                    startLoc.getBlockY() + block.endY(),
+                                    startLoc.getBlockZ() + block.endZ(),
                                     block.type()
                             );
                         } else {
