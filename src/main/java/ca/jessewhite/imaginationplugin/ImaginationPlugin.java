@@ -1,5 +1,8 @@
 package ca.jessewhite.imaginationplugin;
 
+import ca.jessewhite.imaginationplugin.ai.AIService;
+import ca.jessewhite.imaginationplugin.ai.Block;
+import ca.jessewhite.imaginationplugin.ai.Blocks;
 import io.papermc.lib.PaperLib;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,32 +20,40 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class ImaginationPlugin extends JavaPlugin implements Listener, CommandExecutor {
+
+  private AIService aiService = new AIService();
 
   @Override
   public void onEnable() {
     PaperLib.suggestPaper(this);
     saveDefaultConfig();
     getServer().getPluginManager().registerEvents(this, this);
-
-    // Register the "imagine" command
+    aiService.init();
     this.getCommand("imagine").setExecutor(this);
-    getLogger().info("ImaginationPlugin has been enabled with 'imagine' command");
   }
 
   @Override
   public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
     if (command.getName().equalsIgnoreCase("imagine")) {
-      // Join all arguments to form the full text
       String imaginedText = String.join(" ", args);
-      
-      // Log the imagination text to the console
-      getLogger().log(Level.INFO, sender.getName() + " imagined: " + imaginedText);
-      
-      // Send confirmation to the player
-      sender.sendMessage("Your imagination has been logged: " + imaginedText);
+      aiService.imagine(imaginedText).whenComplete((blocks, throwable) -> {
+        if (throwable != null) {
+          sender.sendMessage("Failed to imagine: " + throwable.getMessage());
+          return;
+        }
+        if (blocks == null || blocks.blocks() == null || blocks.blocks().isEmpty()) {
+          getServer().getScheduler().runTask(this, () ->
+                  sender.sendMessage("Sorry, I couldn't generate any blocks from your imagination."));
+          return;
+        }
+
+        int blockCount = blocks.blocks().size();
+        sender.sendMessage("Your imagination generated " + blockCount + " blocks!");
+      });
       return true;
     }
     return false;
