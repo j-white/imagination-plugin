@@ -17,8 +17,11 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ImaginationPlugin extends JavaPlugin implements Listener, CommandExecutor {
+  private static final Logger LOG = LoggerFactory.getLogger(ImaginationPlugin.class);
 
   private AIService aiService = new AIService();
   private BlockBuilder blockBuilder;
@@ -37,12 +40,13 @@ public class ImaginationPlugin extends JavaPlugin implements Listener, CommandEx
   public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
     if (command.getName().equalsIgnoreCase("imagine")) {
       String imaginedText = String.join(" ", args);
-      sender.sendMessage("Imagining: " + imaginedText + "...");
+      sender.sendMessage("Imagining " + imaginedText + "...");
 
       aiService.imagine(imaginedText).whenComplete((blocks, throwable) -> {
         if (throwable != null) {
           getServer().getScheduler().runTask(this, () ->
                   sender.sendMessage("Failed to imagine: " + throwable.getMessage()));
+          LOG.warn("Failed to imagine", throwable);
           return;
         }
         if (blocks == null || blocks.blocks() == null || blocks.blocks().isEmpty()) {

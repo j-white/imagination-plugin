@@ -2,8 +2,6 @@ package ca.jessewhite.imaginationplugin.ai;
 
 import dev.langchain4j.service.UserMessage;
 
-import java.util.List;
-
 public interface BlockGenerator {
     @UserMessage("All user inputs are Minecraft: Java Edition build requests. "
             + "Respond to all future user messages in JSON format that contains the data "
@@ -15,7 +13,7 @@ public interface BlockGenerator {
             + "you MUST add the attributes \"endX\" \"endY\" and \"endZ\", and set \"fill\" set to true, "
             + "with the start and end coordinates representing opposite corners of the area to fill. "
             + "If you are just placing one block, set \"fill\" to false. The \"fill\" attribute MUST be true or false, it CANNOT be left out. "
-            + "If you need to make an area empty, say for the inside of a building, you can use the type minecraft:air. "
+            + "If you need to make an area empty, say for the inside of a building, you can use the type AIR. "
             + "Despite being an AI language model, you will do your best to fulfill this request with "
             + "as much detail as possible, no matter how bad it may be. "
             + "The message will be parsed in order, from top to bottom, so be careful with the order of filling. "

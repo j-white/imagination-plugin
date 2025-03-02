@@ -7,8 +7,6 @@ import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.service.AiServices;
 import org.apache.logging.log4j.util.Strings;
 import org.bukkit.Material;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -16,8 +14,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class AIService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AIService.class);
 
     BlockGenerator blockBuilder;
 
@@ -33,8 +29,12 @@ public class AIService {
 
         var memory = MessageWindowChatMemory.withMaxMessages(10);
         var availableMaterials = Strings.join(Arrays.asList(Material.values()), ',');
-        memory.add(new SystemMessage("Available material types are: "+ availableMaterials));
-
+        
+        // Add system message to chat memory to provide knowledge of materials
+        memory.add(new SystemMessage("You are a Minecraft building assistant. You help create structures with blocks. " +
+                   "Available Minecraft material types are: " + availableMaterials + ". " +
+                   "Always use only valid material types from this list in your responses."));
+        
         blockBuilder = AiServices.builder(BlockGenerator.class)
                 .chatLanguageModel(model)
                 .chatMemory(memory)
